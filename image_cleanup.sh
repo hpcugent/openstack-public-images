@@ -35,7 +35,7 @@ sourcerc
 function deleteImages(){
     COUNT=0
     for id in $(openstack image list --public -f json | jq -r '.[] | select(.Status=="deactivated") | .ID');do
-        openstack image delete $id
+        openstack image delete "$id"
         COUNT=$((COUNT+1))
     done
     success "$COUNT images cleaned up."

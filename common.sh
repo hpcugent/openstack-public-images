@@ -26,7 +26,7 @@ function sourcerc(){
         error "Unknown stack: $HOSTNAME"
         ;;
     esac
-    source "$HOME/${STACK}rc"
+    source "${HOME}/${STACK}rc"
 }
 function getConfirmation(){
     REPLY="n"

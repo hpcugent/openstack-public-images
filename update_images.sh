@@ -15,7 +15,7 @@ EOF
 exit 0
 }
 OPTSTRING=":ythf:"
-while getopts ${OPTSTRING} opt; do
+while getopts "${OPTSTRING}" opt; do
   case ${opt} in
     y)
       YES=true
@@ -45,10 +45,10 @@ fi
 function update_image(){
     DISTRO=$1 VERSION_NAME=$2 VERSION_NUMBER=$3 ./update_generic.sh
 }
-for i in $(seq 0 $(($(jq length $IMG_JSON)-1))); do
-    DISTRO="$(jq -r ".[$i].distro" $IMG_JSON)"
-    VERSION_NAME="$(jq -r ".[$i].version_name" $IMG_JSON)"
-    VERSION_NUMBER="$(jq -r ".[$i].version_number" $IMG_JSON)"
+for i in $(seq 0 $(($(jq length "$IMG_JSON")-1))); do
+    DISTRO="$(jq -r ".[$i].distro" "$IMG_JSON")"
+    VERSION_NAME="$(jq -r ".[$i].version_name" "$IMG_JSON")"
+    VERSION_NUMBER="$(jq -r ".[$i].version_number" "$IMG_JSON")"
 
     getConfirmation "Update \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\"?" "Updating \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
