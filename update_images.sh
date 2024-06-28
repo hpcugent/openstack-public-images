@@ -43,15 +43,25 @@ if jq -e "$IMG_JSON" >/dev/null 2>&1; then
 fi
 # distro, version_name,version_number
 function update_image(){
-    DISTRO=$1 VERSION_NAME=$2 VERSION_NUMBER=$3 ./update_generic.sh
+  ./update_generic.sh
 }
-for i in $(seq 0 $(($(jq length "$IMG_JSON")-1))); do
+for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
+    unset DISTRO VERSION_NAME VERSION_NUMBER
     DISTRO="$(jq -r ".[$i].distro" "$IMG_JSON")"
     VERSION_NAME="$(jq -r ".[$i].version_name" "$IMG_JSON")"
     VERSION_NUMBER="$(jq -r ".[$i].version_number" "$IMG_JSON")"
+    export DISTRO VERSION_NAME VERSION_NUMBER
+    _has_url="$(jq -r ".[$i] | has(\"url\")" "$IMG_JSON")"
+    if [ "$_has_url" == "true" ];then
+      URL="$(jq -r ".[$i].url" "$IMG_JSON" | envsubst )"
+    else
+      URL="$(jq -r ".$DISTRO" urls.json | envsubst )"
+    fi
+    if [ -z "$URL" ]; then error "No URL found for $DISTRO"; fi
+    export URL
 
     getConfirmation "Update \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\"?" "Updating \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        update_image "$DISTRO" "$VERSION_NAME" "$VERSION_NUMBER"
+        update_image
     fi
 done

@@ -1,0 +1,7 @@
+{
+    "ubuntu": "https://cloud-images.ubuntu.com/${VERSION_NAME}/current/${VERSION_NAME}-server-cloudimg-amd64.img",
+    "debian": "https://cloud.debian.org/images/cloud/${VERSION_NAME}/latest/debian-${VERSION_NUMBER}-genericcloud-amd64.qcow2",
+    "rocky" : "https://download.rockylinux.org/pub/rocky/${VERSION_NUMBER}/images/x86_64/Rocky-${VERSION_NAME}-GenericCloud.latest.x86_64.qcow2",
+    "alma"  : "https://repo.almalinux.org/almalinux/${VERSION_NUMBER}/cloud/x86_64/images/AlmaLinux-${VERSION_NUMBER}-GenericCloud-latest.x86_64.qcow2",
+    "cirros": "https://download.cirros-cloud.net/${VERSION_NAME}/${CIRROS_IMAGE}/cirros-${VERSION_NUMBER}-x86_64-disk.img"
+}

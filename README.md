@@ -4,10 +4,27 @@ Scripts to publish public OS images for VSC Tier-1 Cloud infrastructure
 ## Usage
 
 To update the images, run `./update_images.sh`.
+Run it with `-y` to skip confirmation prompts.
 See `./update_images.sh -h` for more info.
 
+You can edit the `urls.json` to change the default download URL template for each distro.
+
+### Custom image list
 You can edit the `images.json` file to change which images are updated, or supply a custom file with `-f myfile.json`
-**Warning:** Only the listed distros are supported, but it should work for all _versions_ of that distro.
+
+The file has this format:
+```json
+    {
+      "distro": "fedora",
+      "version_name": "cloud",
+      "version_number": "40",
+      "url":"https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"
+    },
+```
+**Notes:**
+* `url` is optional if `urls.json` contains a template for `distro`
+* The script will fail for `distro`s that aren't currently in `urls.json` unless you update `update.generic.sh` to support them
+
 
 ### Cleaning up backups
 The script will create backups of each image and deactivate them, unless it cannot find an existing image to back up.

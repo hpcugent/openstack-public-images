@@ -85,29 +85,9 @@ function configure_crony(){
     success "configured chrony"
 }
 function download_iso(){
-    UBUNTU_IMG=${VERSION_NAME}-server-cloudimg-amd64.img
-    UBUNTU_URL="https://cloud-images.ubuntu.com/${VERSION_NAME}/current/${UBUNTU_IMG}"
-
-    ROCKY_IMG="Rocky-${VERSION_NAME}-GenericCloud.latest.x86_64.qcow2"
-    ROCKY_URL="https://download.rockylinux.org/pub/rocky/${VERSION_NUMBER}/images/x86_64/${ROCKY_IMG}"
-
-    ALMA_IMG="AlmaLinux-${VERSION_NUMBER}-GenericCloud-latest.x86_64.qcow2"
-    ALMA_URL="https://repo.almalinux.org/almalinux/${VERSION_NUMBER}/cloud/x86_64/images/${ALMA_IMG}"
-
-    DEBIAN_IMG="debian-${VERSION_NUMBER}-genericcloud-amd64.qcow2"
-    DEBIAN_URL="https://cloud.debian.org/images/cloud/${VERSION_NAME}/latest/${DEBIAN_IMG}"
-
-    CIRROS_IMAGE="cirros-${VERSION_NUMBER}-x86_64-disk.img"
-    CIRROS_URL="https://download.cirros-cloud.net/${VERSION_NAME}/${CIRROS_IMAGE}"
-
-    URL="${DISTRO^^}_URL"
-
-    wget "${!URL}" -O "${IMAGE_RELEASE}.img"
+    wget "${URL}" -O "${IMAGE_RELEASE}.img"
     success "Downloaded ${IMAGE_RELEASE}.img"
 }
-
-
-
 
 export LIBGUESTFS_BACKEND=direct
 
