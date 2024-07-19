@@ -93,8 +93,10 @@ export LIBGUESTFS_BACKEND=direct
 
 download_iso
 if [[ $DISTRO != "cirros" ]]; then
-# Generic
+# Some updated rocky package breaks initial boot
+if [[ $DISTRO != "rocky" ]]; then
 virt-customize -a "${IMAGE_RELEASE}.img" --update --selinux-relabel
+fi
 # Packages
 install_packages
 # Time stuff
