@@ -34,13 +34,14 @@ function upload_image() {
         ;;
     esac
     # No os property for cirros
-    _OS_PROPERTY=$([[ $DISTRO != 'cirros' ]] && echo "--property os_distro=$_OS_DISTRO" || echo "");
+    if [ "$DISTRO" != "cirros" ]; then _OS_PROPERTY=(--property os_distro="$_OS_DISTRO")
+    else _OS_PROPERTY=();fi
     #common.sh
     sourcerc
     set +e
     OLD_ID="$(openstack image show "${IMAGE_RELEASE}" -f json | jq '.id' -r)"
     set -e
-    openstack image create "${IMAGE_RELEASE}" --file "${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --public --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' $_OS_PROPERTY
+    openstack image create "${IMAGE_RELEASE}" --file "${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --public --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' "${_OS_PROPERTY[@]}"
     # Archive old image *after* image create succeeds. Allow failure if not found
     if [ -n "$OLD_ID" ]; then
      openstack image set --name "${IMAGE_RELEASE}-$(date +%F-%H%M%S)" --deactivate "${OLD_ID}"
