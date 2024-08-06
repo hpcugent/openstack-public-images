@@ -1,9 +1,10 @@
 #!/bin/bash
 source ./common.sh
 set -euf -o pipefail
+TMP_DIR=${TMP_DIR:=$(pwd)}
 # shellcheck source=./common.sh
 function traperr(){
-    rm -f "${IMAGE_RELEASE}.img"
+    rm -f "${TMP_DIR}/${IMAGE_RELEASE}.img"
     error "$1"
 }
 trap 'error on $LINENO' 1 2 3 6
@@ -40,15 +41,20 @@ function upload_image() {
     sourcerc
     set +e
     OLD_ID="$(openstack image show "${IMAGE_RELEASE}" -f json | jq '.id' -r)"
+    openstack image delete "${IMAGE_RELEASE}-test"
+    openstack image create "${IMAGE_RELEASE}-test" --file "${TMP_DIR}/${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' "${_OS_PROPERTY[@]}"
+    if [[ ! $(run_test "${IMAGE_RELEASE}-test") ]]; then
+        error "${IMAGE_RELEASE} test failed!"
+    fi
     set -e
-    openstack image create "${IMAGE_RELEASE}" --file "${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --public --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' "${_OS_PROPERTY[@]}"
+    openstack image set "${IMAGE_RELEASE}-test" --name "${IMAGE_RELEASE}" --public
     # Archive old image *after* image create succeeds. Allow failure if not found
     if [ -n "$OLD_ID" ]; then
      openstack image set --name "${IMAGE_RELEASE}-$(date +%F-%H%M%S)" --deactivate "${OLD_ID}"
     else
      warn "OLD ID not found."
     fi
-    rm "${IMAGE_RELEASE}.img"
+    rm "${TMP_DIR}/${IMAGE_RELEASE}.img"
     success "uploaded image"
 }
 ##
@@ -69,7 +75,7 @@ function install_packages(){
         *)
         error "unknown distro $DISTRO"
     esac
-    virt-customize -x -v -a "${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel
+    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel
     success "installed packages"
 }
 ##
@@ -81,13 +87,16 @@ function configure_crony(){
     if [ "$_OS_DISTRO" == "ubuntu" ] || [ "$_OS_DISTRO" == "debian" ]; then
         CHRONY_FILE='/etc/chrony/chrony.conf'
     fi
-    virt-customize -a "${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel
-    virt-customize -a "${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel
     success "configured chrony"
 }
 function download_iso(){
-    wget "${URL}" -O "${IMAGE_RELEASE}.img"
-    success "Downloaded ${IMAGE_RELEASE}.img"
+    wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img"
+    success "Downloaded ${TMP_DIR}/${IMAGE_RELEASE}.img"
+}
+run_test(){
+    ./test_image.sh "$1"
 }
 
 export LIBGUESTFS_BACKEND=direct
@@ -96,7 +105,7 @@ download_iso
 if [[ $DISTRO != "cirros" ]]; then
 # Some updated rocky package breaks initial boot
 if [[ $DISTRO != "rocky" ]]; then
-virt-customize -a "${IMAGE_RELEASE}.img" --update --selinux-relabel
+virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --update --selinux-relabel
 fi
 # Packages
 install_packages
