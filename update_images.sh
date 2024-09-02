@@ -45,6 +45,7 @@ fi
 function update_image(){
   ./update_generic.sh
 }
+images=()
 for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
     unset DISTRO VERSION_NAME VERSION_NUMBER
     DISTRO="$(jq -r ".[$i].distro" "$IMG_JSON")"
@@ -62,6 +63,7 @@ for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
 
     getConfirmation "Update \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\"?" "Updating \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        update_image
+        images+=("DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic.sh 2>&1 | tee ${DISTRO}_${VERSION_NUMBER}_update.log")
     fi
 done
+parallel --jobs 4 --keep-order --bar --eta ::: "${images[@]}"

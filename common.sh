@@ -18,7 +18,7 @@ function warn(){
     printf "%s\n" "${WARN}${1}${NORMAL}"
 }
 function sourcerc(){
-    STACK=$(echo "$HOSTNAME" | cut -d '.' -f 2)
+    export STACK=$(echo "$HOSTNAME" | cut -d '.' -f 2)
     case $STACK in
         munna | swirlix)
         ;;

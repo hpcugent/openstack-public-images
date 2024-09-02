@@ -2,12 +2,12 @@
     {
       "distro": "ubuntu",
       "version_name": "noble",
-      "version_number": "24.4"
+      "version_number": "24.04"
     },
     {
         "distro": "ubuntu",
         "version_name": "jammy",
-        "version_number": "22.4"
+        "version_number": "22.04"
     },
     {
       "distro": "debian",
