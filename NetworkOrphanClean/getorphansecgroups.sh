@@ -34,7 +34,7 @@ while getopts "${OPTSTRING}" opt; do
   esac
 done
 source common.sh
-secgroups="$(openstack security group list -c ID -f json | jq -r '.[].ID')"
+secgroups="$(openstack security group list -c ID -f json "${PROJECT[@]}" | jq -r '.[].ID')"
 getPorts
 set +e
 deadgroups=()
