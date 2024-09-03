@@ -5,7 +5,7 @@ set -euf -o pipefail
 source common.sh
 function getVMsOfPort(){
     portID=$1
-    portIPs="$( getProperty "$portID" "fixed_ips.[].ip_address" )"
+    portIPs="$( getProperty "$portID" "fixed_ips[].ip_address" )"
 
     ipRegex=""
     for ip in $portIPs;do
