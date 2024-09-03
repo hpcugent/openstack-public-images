@@ -12,8 +12,19 @@ function vmIsActive() {
     fi
     return 0
 }
+function catchExit(){
+    if [[ "$VM_ID" == "" ]];then
+        error "Error creating server for $IMAGE"
+    fi
+}
+if [[ "$IMAGE" =~ "Windows" ]];then
+    warn "skipped $IMAGE: Can't test Windows"
+    exit 0
+fi
+
+trap catchExit ERR 
 SEC_GROUP="$(openstack security group list --project admin -f json | jq -r '.[] | select(.Name == "default") | .ID')"
-VM_ID="$(openstack server create --flavor 1 --image "${IMAGE}" \
+VM_ID="$(openstack server create --flavor 3 --image "${IMAGE}" \
   --security-group "$SEC_GROUP" "${VMNAME}" --network "public" -f json | jq -r '.id')"
 set -e
 SECONDS=0
@@ -22,18 +33,21 @@ while vmIsActive && [ $SECONDS -lt $TIMEOUT ] ; do
 done
 if [ $SECONDS -gt $TIMEOUT ] && vmIsActive ; then
     openstack server delete "${VM_ID}"
-    error "VM_ID Did not become available within $SECONDS seconds".
+    error "$VM_ID Did not become available within $SECONDS seconds".
 fi
-sleep 20
+trap - ERR
+set +e
 test_exit=1
-set +e
-test_comm="$(openstack console log show "${VM_ID}" | grep 'Cloud-init target')"
-$test_comm
-test_exit=$?
-set +e
+SECONDS=0
+while [[ $test_exit != 0 ]] && [[ $SECONDS -lt 100 ]];do
+    openstack console log show "${VM_ID}" | grep -q -e 'BEGIN SSH HOST KEY KEYS' -e 'cloud-init'
+    test_exit=$?
+    sleep 5
+done
+set -e
 openstack server delete "${VM_ID}"
 if [[ $test_exit != 0 ]];then
-    error "ssh failed!"
+    error "$IMAGE failed!"
 fi
 
 success "$IMAGE validated."

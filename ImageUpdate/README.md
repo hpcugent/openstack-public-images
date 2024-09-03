@@ -45,4 +45,5 @@ Finally it will upload the new image and make a backup of the old one.
 * `update_images.sh`:   Wrapper and `.json` parser for `update_generic.sh`.
 * `update_generic.sh`:  Script to update a single image based on env variables.
 * `image_cleanup.sh`:   Script to cleanup deactivated openstack images.
+* `test_all.sh`:        Script to test all _existing, public_ images.
 * `common.sh`:          Library for common functions.
