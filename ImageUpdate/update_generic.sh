@@ -2,6 +2,36 @@
 source ./common.sh
 set -euf -o pipefail
 TMP_DIR=${TMP_DIR:=$(pwd)}
+function send_help(){
+    cat <<"EOF"
+Usage: DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic <flags>
+Flags:
+-s              Return required size in bytes for this update
+-h              For when you're confused.
+Function:
+The script will read a json file and pass the values to update_generic.sh to download, modify and then upload OS images to openstack.
+EOF
+exit 0
+}
+OPTSTRING=":sh"
+SHOW_SIZE=false
+while getopts "${OPTSTRING}" opt; do
+  case ${opt} in
+    s)
+      SHOW_SIZE=true
+      ;;
+    h)
+      send_help
+      ;;
+    *)
+      warn "Unknown flag"
+      send_help
+      ;;
+  esac
+done
+
+
+
 # shellcheck source=./common.sh
 function traperr(){
     rm -f "${TMP_DIR}/${IMAGE_RELEASE}.img"
@@ -95,10 +125,18 @@ function download_iso(){
     wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img"
     success "Downloaded ${TMP_DIR}/${IMAGE_RELEASE}.img"
 }
+function getRequiredSize(){
+    wget "${URL}" --spider --server-response -O - 2>&1 | sed -ne '/Content-Length/{s/.*: //;p}'
+}
 run_test(){
     ./test_image.sh "$1"
 }
 
+if [[ $SHOW_SIZE == "true" ]];then
+    getRequiredSize
+    exit 0
+fi
+ 
 export LIBGUESTFS_BACKEND=direct
 
 download_iso

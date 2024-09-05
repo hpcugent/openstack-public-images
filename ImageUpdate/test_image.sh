@@ -2,6 +2,7 @@
 source ./common.sh
 set -euf -o pipefail
 IMAGE=${1}
+_FLAVOR=${TESTFLAVOR:=3}
 VMNAME="${IMAGE}-test"
 # Timeout in seconds
 TIMEOUT=300
@@ -24,7 +25,7 @@ fi
 
 trap catchExit ERR 
 SEC_GROUP="$(openstack security group list --project admin -f json | jq -r '.[] | select(.Name == "default") | .ID')"
-VM_ID="$(openstack server create --flavor 3 --image "${IMAGE}" \
+VM_ID="$(openstack server create --flavor "${_FLAVOR}" --image "${IMAGE}" \
   --security-group "$SEC_GROUP" "${VMNAME}" --network "public" -f json | jq -r '.id')"
 set -e
 SECONDS=0
