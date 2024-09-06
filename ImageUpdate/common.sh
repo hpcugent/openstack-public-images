@@ -7,7 +7,7 @@ NORMAL=$(tput sgr0)
 SUCCESS=$(tput setaf 2)
 WARN=$(tput setaf 6)
 function error(){
-    local MESSAGE=${1:="An error occuERROR!"}
+    local MESSAGE=${1:-"An error occured!"}
     printf "%s\n" "${ERROR}${MESSAGE}${NORMAL}"
     exit 1
 }
@@ -17,16 +17,26 @@ function success(){
 function warn(){
     printf "%s\n" "${WARN}${1}${NORMAL}"
 }
+export STACK=$(echo "$HOSTNAME" | cut -d '.' -f 2)
+case $STACK in
+    munna | swirlix)
+    ;;
+    *)
+    error "Unknown stack: $HOSTNAME"
+    ;;
+esac
 function sourcerc(){
-    export STACK=$(echo "$HOSTNAME" | cut -d '.' -f 2)
-    case $STACK in
-        munna | swirlix)
-        ;;
-        *)
-        error "Unknown stack: $HOSTNAME"
-        ;;
-    esac
+    # remove old openstack stuff
+    while read -r varname; do unset "$varname"; done < <(env | grep ^OS_ | cut -d '=' -f1)
     source "${HOME}/${STACK}rc"
+}
+function sourceprojectrc(){
+    if [[ ! -f projectrc ]];then
+        error "projectrc not found!"
+    fi
+    # remove old openstack stuff
+    while read -r varname; do unset "$varname"; done < <(env | grep ^OS_ | cut -d '=' -f1)
+    source projectrc
 }
 function getConfirmation(){
     REPLY="n"
@@ -41,3 +51,4 @@ function getConfirmation(){
     fi
     export REPLY
 }
+export PERL_BADLANG=0

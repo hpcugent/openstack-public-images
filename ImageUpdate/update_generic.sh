@@ -2,6 +2,36 @@
 source ./common.sh
 set -euf -o pipefail
 TMP_DIR=${TMP_DIR:=$(pwd)}
+function send_help(){
+    cat <<"EOF"
+Usage: DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic <flags>
+Flags:
+-s              Return required size in bytes for this update
+-h              For when you're confused.
+Function:
+The script will read a json file and pass the values to update_generic.sh to download, modify and then upload OS images to openstack.
+EOF
+exit 0
+}
+OPTSTRING=":sh"
+SHOW_SIZE=false
+while getopts "${OPTSTRING}" opt; do
+  case ${opt} in
+    s)
+      SHOW_SIZE=true
+      ;;
+    h)
+      send_help
+      ;;
+    *)
+      warn "Unknown flag"
+      send_help
+      ;;
+  esac
+done
+
+
+
 # shellcheck source=./common.sh
 function traperr(){
     rm -f "${TMP_DIR}/${IMAGE_RELEASE}.img"
@@ -41,11 +71,13 @@ function upload_image() {
     sourcerc
     set +e
     OLD_ID="$(openstack image show "${IMAGE_RELEASE}" -f json | jq '.id' -r)"
-    openstack image delete "${IMAGE_RELEASE}-test"
-    openstack image create "${IMAGE_RELEASE}-test" --file "${TMP_DIR}/${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' "${_OS_PROPERTY[@]}"
-    if [[ ! $(run_test "${IMAGE_RELEASE}-test") ]]; then
+    openstack image delete "${IMAGE_RELEASE}-test" &>/dev/null
+    sourceprojectrc
+    openstack image create "${IMAGE_RELEASE}-test" --file "${TMP_DIR}/${IMAGE_RELEASE}.img" --disk-format qcow2 --container-format bare --property hw_vif_multiqueue_enabled=true --property hw_qemu_guest_agent='yes' "${_OS_PROPERTY[@]}" &>/dev/null
+    if ! run_test "${IMAGE_RELEASE}-test" ; then
         error "${IMAGE_RELEASE} test failed!"
     fi
+    sourcerc
     set -e
     openstack image set "${IMAGE_RELEASE}-test" --name "${IMAGE_RELEASE}" --public
     # Archive old image *after* image create succeeds. Allow failure if not found
@@ -55,7 +87,7 @@ function upload_image() {
      warn "OLD ID not found."
     fi
     rm "${TMP_DIR}/${IMAGE_RELEASE}.img"
-    success "uploaded image"
+    success "Uploaded image $IMAGE_RELEASE"
 }
 ##
 # Install chrony and python on debian & rhel-like
@@ -75,8 +107,7 @@ function install_packages(){
         *)
         error "unknown distro $DISTRO"
     esac
-    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel
-    success "installed packages"
+    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel &>/dev/null
 }
 ##
 # Configure chrony to use ugent ntp
@@ -87,25 +118,38 @@ function configure_crony(){
     if [ "$_OS_DISTRO" == "ubuntu" ] || [ "$_OS_DISTRO" == "debian" ]; then
         CHRONY_FILE='/etc/chrony/chrony.conf'
     fi
-    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel
-    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel
-    success "configured chrony"
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel &>/dev/null
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel &>/dev/null
 }
 function download_iso(){
-    wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img"
-    success "Downloaded ${TMP_DIR}/${IMAGE_RELEASE}.img"
+    wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img" &>/dev/null
+}
+function getRequiredSize(){
+    if ! wget -q --spider "$URL";then
+        error "Invalid URL: $URL for image $IMAGE_RELEASE"
+    fi
+
+    wget "${URL}" --spider --server-response -O - 2>&1 | sed -ne '/Length/{s/.*: //;p}' | sort -r | head -n 1 | cut -d " " -f 1
 }
 run_test(){
     ./test_image.sh "$1"
+    succeed=$?
+    sourcerc
+    return $succeed
 }
 
+if [[ $SHOW_SIZE == "true" ]];then
+    getRequiredSize
+    exit 0
+fi
+ 
 export LIBGUESTFS_BACKEND=direct
 
 download_iso
 if [[ $DISTRO != "cirros" ]]; then
 # Some updated rocky package breaks initial boot
 if [[ $DISTRO != "rocky" ]]; then
-virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --update --selinux-relabel
+virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --update --selinux-relabel &>/dev/null
 fi
 # Packages
 install_packages
