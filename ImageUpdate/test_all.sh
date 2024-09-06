@@ -2,6 +2,7 @@
 set -euf -o pipefail
 # shellcheck source=./common.sh
 source ./common.sh
+sourceprojectrc
 TMP_DIR=${TMP_DIR:=$(pwd)}
 function send_help(){
     cat <<"EOF"

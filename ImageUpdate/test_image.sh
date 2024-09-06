@@ -6,13 +6,14 @@ _FLAVOR=${TESTFLAVOR:=3}
 VMNAME="${IMAGE}-test"
 # Timeout in seconds
 TIMEOUT=300
-sourcerc
+sourceprojectrc
 function vmIsActive() {
     if [ "$(openstack server show "${VM_ID}" -f json | jq -r '.status')" == "ACTIVE" ]; then
         return 1
     fi
     return 0
 }
+VM_ID=""
 function catchExit(){
     if [[ "$VM_ID" == "" ]];then
         error "Error creating server for $IMAGE"
@@ -22,11 +23,17 @@ if [[ "$IMAGE" =~ "Windows" ]];then
     warn "skipped $IMAGE: Can't test Windows"
     exit 0
 fi
-
+if [ $STACK == "swirlix" ];then
+  PROJECT="VSC_12348"
+  NETWORK="VSC_12348_vm"
+else
+  PROJECT="VSC_00001"
+  NETWORK="VSC_00001_vm"
+fi
 trap catchExit ERR 
-SEC_GROUP="$(openstack security group list --project admin -f json | jq -r '.[] | select(.Name == "default") | .ID')"
+SEC_GROUP="$(openstack security group list -f json | jq -r '.[] | select(.Name == "default") | .ID')"
 VM_ID="$(openstack server create --flavor "${_FLAVOR}" --image "${IMAGE}" \
-  --security-group "$SEC_GROUP" "${VMNAME}" --network "public" -f json | jq -r '.id')"
+  --security-group "$SEC_GROUP" "${VMNAME}" --network "$NETWORK" -f json | jq -r '.id')"
 set -e
 SECONDS=0
 while vmIsActive && [ $SECONDS -lt $TIMEOUT ] ; do

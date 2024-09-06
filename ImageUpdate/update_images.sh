@@ -66,7 +66,6 @@ for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
     fi
     if [ -z "$URL" ]; then error "No URL found for $DISTRO"; fi
     export URL
-
     getConfirmation "Update \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\"?" "Updating \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         images+=("DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic.sh 2>&1 | tee ${DISTRO}_${VERSION_NUMBER}_update.log")
