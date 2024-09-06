@@ -7,7 +7,7 @@ NORMAL=$(tput sgr0)
 SUCCESS=$(tput setaf 2)
 WARN=$(tput setaf 6)
 function error(){
-    local MESSAGE=${1:="An error occuERROR!"}
+    local MESSAGE=${1:-"An error occured!"}
     printf "%s\n" "${ERROR}${MESSAGE}${NORMAL}"
     exit 1
 }
@@ -51,3 +51,4 @@ function getConfirmation(){
     fi
     export REPLY
 }
+export PERL_BADLANG=0

@@ -1,6 +1,6 @@
 #!/bin/bash
 source ./common.sh
-set -euf -o pipefail
+set -uf -o pipefail
 function send_help(){
     cat <<"EOF"
 Usage: ./update_images <flags>
@@ -46,10 +46,6 @@ if jq -e "$IMG_JSON" >/dev/null 2>&1; then
     echo "invalid json file!"
     exit 1
 fi
-# distro, version_name,version_number
-function update_image(){
-  ./update_generic.sh
-}
 images=()
 images_size=0
 for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
@@ -69,7 +65,10 @@ for i in $(seq 0 $(($(jq 'length' "$IMG_JSON")-1))); do
     getConfirmation "Update \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\"?" "Updating \"${DISTRO^} $VERSION_NUMBER ($VERSION_NAME)\""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         images+=("DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic.sh 2>&1 | tee ${DISTRO}_${VERSION_NUMBER}_update.log")
-        image_size=$(DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic.sh -s)
+        if ! image_size=$(DISTRO=$DISTRO VERSION_NAME=$VERSION_NAME VERSION_NUMBER=$VERSION_NUMBER URL=$URL ./update_generic.sh -s)
+        then 
+          error "$image_size"
+        fi
         ((images_size+=image_size))
     fi
 done
@@ -79,7 +78,6 @@ BUFFER="$(numfmt --from=iec $HUMAN_BUFFER)"
 AVAILABLE_SIZE="$(df --output=avail -B 1 "$TMP_DIR" | tail -n1)"
 MIN_SIZE=$((images_size+BUFFER))
 
-echo "TEMPDIR: ${TMP_DIR}"
 if [[ $AVAILABLE_SIZE -lt $MIN_SIZE ]];then
   HUMAN_AVAILABLE="$(df -h --output=avail "$TMP_DIR" | tail -n1))"
   HUMAN_NEED="$(numfmt --to=iec $MIN_SIZE)" 

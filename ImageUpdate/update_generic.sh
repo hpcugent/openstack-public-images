@@ -87,7 +87,7 @@ function upload_image() {
      warn "OLD ID not found."
     fi
     rm "${TMP_DIR}/${IMAGE_RELEASE}.img"
-    success "uploaded image $IMAGE_RELEASE"
+    success "Uploaded image $IMAGE_RELEASE"
 }
 ##
 # Install chrony and python on debian & rhel-like
@@ -107,8 +107,7 @@ function install_packages(){
         *)
         error "unknown distro $DISTRO"
     esac
-    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel
-    success "installed packages"
+    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel &>/dev/null
 }
 ##
 # Configure chrony to use ugent ntp
@@ -119,15 +118,17 @@ function configure_crony(){
     if [ "$_OS_DISTRO" == "ubuntu" ] || [ "$_OS_DISTRO" == "debian" ]; then
         CHRONY_FILE='/etc/chrony/chrony.conf'
     fi
-    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel
-    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel
-    success "configured chrony"
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "sed -i '1s/^/pool ntp.ugent.be iburst\n/' ${CHRONY_FILE}" --selinux-relabel &>/dev/null
+    virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command 'ln -sfn /usr/share/zoneinfo/Europe/Brussels /etc/localtime' --selinux-relabel &>/dev/null
 }
 function download_iso(){
-    wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img" $
-    success "Downloaded ${TMP_DIR}/${IMAGE_RELEASE}.img"
+    wget "${URL}" -O "${TMP_DIR}/${IMAGE_RELEASE}.img" &>/dev/null
 }
 function getRequiredSize(){
+    if ! wget -q --spider "$URL";then
+        error "Invalid URL: $URL for image $IMAGE_RELEASE"
+    fi
+
     wget "${URL}" --spider --server-response -O - 2>&1 | sed -ne '/Length/{s/.*: //;p}' | sort -r | head -n 1 | cut -d " " -f 1
 }
 run_test(){
@@ -148,7 +149,7 @@ download_iso
 if [[ $DISTRO != "cirros" ]]; then
 # Some updated rocky package breaks initial boot
 if [[ $DISTRO != "rocky" ]]; then
-virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --update --selinux-relabel
+virt-customize -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --update --selinux-relabel &>/dev/null
 fi
 # Packages
 install_packages
