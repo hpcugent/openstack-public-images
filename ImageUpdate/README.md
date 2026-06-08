@@ -3,6 +3,8 @@ Scripts to publish public OS images for VSC Tier-1 Cloud infrastructure
 
 ## Usage
 
+Create an application credential for a testing project and place the RC file in `projectrc`.
+
 To update the images, run `./update_images.sh`.
 Run it with `-y` to skip confirmation prompts.
 See `./update_images.sh -h` for more info.

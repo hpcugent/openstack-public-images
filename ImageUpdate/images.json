@@ -1,6 +1,11 @@
 [
     {
       "distro": "ubuntu",
+      "version_name": "resolute",
+      "version_number": "26.04"
+    },
+    {
+      "distro": "ubuntu",
       "version_name": "noble",
       "version_number": "24.04"
     },

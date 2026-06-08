@@ -30,7 +30,7 @@ while getopts "${OPTSTRING}" opt; do
   esac
 done
 
-
+export LIBGUESTFS_BACKEND=direct
 
 # shellcheck source=./common.sh
 function traperr(){
@@ -107,7 +107,7 @@ function install_packages(){
         *)
         error "unknown distro $DISTRO"
     esac
-    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --run-command "$INSTALL_COMMAND" --selinux-relabel &>/dev/null
+    virt-customize -x -v -a "${TMP_DIR}/${IMAGE_RELEASE}.img" --firstboot-install python3,python3-distro,chrony --selinux-relabel &>/dev/null
 }
 ##
 # Configure chrony to use ugent ntp

@@ -29,7 +29,7 @@ while getopts "${OPTSTRING}" opt; do
       PARAM=${OPTARG}
       ;;
     d)
-      export TEMPDIR=${OPTARG}
+      export TMP_DIR=${OPTARG}
       ;;
     h)
       send_help
